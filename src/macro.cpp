@@ -216,7 +216,8 @@ Macro Macro::XDtoGDR(std::filesystem::path path) {
     newMacro.description = "N/A";
     newMacro.gameVersion = GEODE_GD_VERSION;
 
-    std::ifstream file(Utils::widen(path.string()));
+    std::ifstream file(path.string());
+
     std::string line;
 
     if (!file.is_open()) {
