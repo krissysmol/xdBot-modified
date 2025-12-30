@@ -6,10 +6,6 @@ on:
     branches:
       - "main"
 
-env:
-  ACTIONS_STEP_DEBUG: true
-  ACTIONS_RUNNER_DEBUG: true
-
 jobs:
   build:
     strategy:
@@ -34,36 +30,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Wrapper step to make failures visible
-      - name: Build the mod (with error capture)
-        id: build_mod
-        continue-on-error: true
-        uses: geode-sdk/build-geode-mod@main
-        with:
-          bindings: geode-sdk/bindings
-          build-config: ${{ matrix.config.build-type || 'Release' }}
-          export-pdb: true
-          bindings-ref: main
-          combine: true
-          target: ${{ matrix.config.target }}
+      # Build the mod with live error output
+      - name: Build the mod (show full errors)
+        run: |
+          set -euxo pipefail
+          geode build \
+            --bindings geode-sdk/bindings \
+            --build-config ${{ matrix.config.build-type || 'Release' }} \
+            --export-pdb true \
+            --bindings-ref main \
+            --combine true \
+            --target ${{ matrix.config.target }} \
+            2>&1 | tee build.log
 
-      # Explicit failure with message
-      - name: Fail explicitly if build failed
-        if: steps.build_mod.outcome == 'failure'
+      # Explicit failure step if build fails
+      - name: Fail if build failed
+        if: failure()
         run: |
           echo "::error::Geode build failed for ${{ matrix.config.name }}"
           exit 1
-
-      # Upload runner diagnostics on failure
-      - name: Upload runner logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-${{ matrix.config.name }}
-          path: |
-            /home/runner/.cache
-            /home/runner/work/_temp
-            ${{ github.workspace }}
 
   package:
     name: Package builds
