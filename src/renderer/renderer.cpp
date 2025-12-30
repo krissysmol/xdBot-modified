@@ -84,7 +84,7 @@ class $modify(FMODAudioEngine) {
 
         if (path != "playSound_01.ogg" || !Global::get().renderer.recordingAudio)
             return FMODAudioEngine::playEffect(path, speed, p2, volume);
-        return 0
+        return 0;
     }
 
 };
