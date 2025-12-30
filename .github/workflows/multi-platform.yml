@@ -6,23 +6,27 @@ on:
     branches:
       - "main"
 
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         config:
-        - name: Windows
-          os: windows-latest
-          build-type: RelWithDebInfo
+          - name: Windows
+            os: windows-latest
+            build-type: RelWithDebInfo
 
-        - name: Android32
-          os: ubuntu-latest
-          target: Android32
+          - name: Android32
+            os: ubuntu-latest
+            target: Android32
 
-        - name: Android64
-          os: ubuntu-latest
-          target: Android64
+          - name: Android64
+            os: ubuntu-latest
+            target: Android64
 
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
@@ -30,7 +34,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build the mod
+      # Wrapper step to make failures visible
+      - name: Build the mod (with error capture)
+        id: build_mod
+        continue-on-error: true
         uses: geode-sdk/build-geode-mod@main
         with:
           bindings: geode-sdk/bindings
@@ -39,6 +46,24 @@ jobs:
           bindings-ref: main
           combine: true
           target: ${{ matrix.config.target }}
+
+      # Explicit failure with message
+      - name: Fail explicitly if build failed
+        if: steps.build_mod.outcome == 'failure'
+        run: |
+          echo "::error::Geode build failed for ${{ matrix.config.name }}"
+          exit 1
+
+      # Upload runner diagnostics on failure
+      - name: Upload runner logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.config.name }}
+          path: |
+            /home/runner/.cache
+            /home/runner/work/_temp
+            ${{ github.workspace }}
 
   package:
     name: Package builds
