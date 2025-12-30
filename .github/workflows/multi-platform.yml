@@ -12,17 +12,17 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - name: Windows
-          os: windows-latest
-          build-type: RelWithDebInfo
+          - name: Windows
+            os: windows-latest
+            build-type: RelWithDebInfo
 
-        - name: Android32
-          os: ubuntu-latest
-          target: Android32
+          - name: Android32
+            os: ubuntu-latest
+            target: Android32
 
-        - name: Android64
-          os: ubuntu-latest
-          target: Android64
+          - name: Android64
+            os: ubuntu-latest
+            target: Android64
 
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
@@ -30,6 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Build the mod using the official Geode action
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
@@ -39,6 +40,20 @@ jobs:
           bindings-ref: main
           combine: true
           target: ${{ matrix.config.target }}
+
+      # Show the last lines of the build log if the build failed
+      - name: Show build errors
+        if: failure()
+        run: |
+          echo "========= Geode build failed for ${{ matrix.config.name }} ========="
+          # Check for build.log (Geode may create this)
+          if [ -f build.log ]; then
+            echo "Last 50 lines of build.log:"
+            tail -n 50 build.log
+          else
+            echo "No build.log found. Check Geode action output above for errors."
+          fi
+          exit 1
 
   package:
     name: Package builds
