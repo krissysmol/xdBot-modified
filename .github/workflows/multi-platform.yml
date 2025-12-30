@@ -30,7 +30,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Build the mod using the official Geode action
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
@@ -40,6 +39,8 @@ jobs:
           bindings-ref: main
           combine: true
           target: ${{ matrix.config.target }}
+        env:
+          GEODE_VERBOSE: 1   # <-- show full compiler/linker output
 
       # Show the last lines of the build log if the build failed
       - name: Show build errors
